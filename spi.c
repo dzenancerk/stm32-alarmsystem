@@ -1,0 +1,55 @@
+#include "spi.h"
+
+void initSPI1(uint16_t prescaler){
+	
+	RCC->AHB1ENR |= PORT_A_EN;
+	GPIOA->MODER &= ~(MODER_CLEARING_PA5_PA6_PA7_BITS);
+	GPIOA->MODER |= MODER_PA5_PA6_PA7_BITS;
+	GPIOA->AFR[0] &= ~(AFR_CLEARING_PA5_PA6_PA7_BITS);
+	GPIOA->AFR[0] |= AFR_PA5_PA6_PA7_BITS;
+	GPIOA->OSPEEDR &= ~(OSPEEDR_CLEARING_PA5_PA6_PA7_BITS);
+	GPIOA->OSPEEDR |= OSPEEDR_PA5_PA6_PA7_BITS;
+	
+	RCC->AHB1ENR |= PORT_E_EN;
+	GPIOE->MODER &= ~(MODER_CLEARING_PE3_BITS);
+	GPIOE->MODER |= MODER_PE3_BITS;
+	GPIOE->OTYPER &= ~(OTYPER_PE3_BIT);
+	GPIOE->OSPEEDR &= ~(OSPEEDR_CLEARING_PE3_BITS);
+	GPIOE->OSPEEDR |= OSPEEDR_PE3_BITS;
+	
+	SPI1_CS_HIGH;
+	
+	RCC->APB2ENR |= SPI1_PERIPHERAL_EN;
+	SPI1->CR1 = MSTR_BIT;
+	SPI1->CR1 |= SSM_SSI_BITS;
+	SPI1->CR1 |= prescaler;
+	SPI1->CR1 |= SPI1_EN;
+}
+
+
+uint8_t rxByteSPI1(void){
+	
+	uint8_t data;
+	
+	SPI1->DR = DUMMY_BYTE;
+	while(!(SPI1->SR & SPI_I2S_FLAG_TXE));
+	while(!(SPI1->SR & SPI_I2S_FLAG_RXNE));
+	while(SPI1->SR & SPI_I2S_FLAG_BSY);
+	data = SPI1->DR;
+	
+	return data;
+}
+
+
+uint8_t txByteSPI1(uint8_t data){
+	
+	uint8_t tmp;
+	
+	SPI1->DR = data;
+	while(!(SPI1->SR & SPI_I2S_FLAG_TXE));
+	while(!(SPI1->SR & SPI_I2S_FLAG_RXNE));
+	while(SPI1->SR & SPI_I2S_FLAG_BSY);
+	tmp = SPI1->DR;
+	
+	return tmp;
+}
